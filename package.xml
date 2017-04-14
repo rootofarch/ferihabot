@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<package>
+  <name>ferihabot</name>
+  <version>0.0.0</version>
+  <description>The ferihabot package</description>
+
+  <maintainer email="emircem.gezer@gmail.com">Emir Cem Gezer</maintainer>
+  <maintainer email="rootofarch@gmail.com">Hüseyin Erdem</maintainer>
+  <maintainer email="behcet.senturk.1905@gmail.com">Behçet Şentürk</maintainer>
+
+
+  <license>GNUv3</license>
+
+
+  <!-- <url type="website">http://wiki.ros.org/ferihabot</url> -->
+  <author email="emircem.gezer@gmail.com">Emir Cem Gezer</author>
+  <author email="rootofarch@gmail.com">Hüseyin Erdem</author>
+  <author email="behcet.senturk.1905@gmail.com">Behçet Şentürk</author>
+
+  <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
+
+
+  <!--   <build_depend>message_generation</build_depend> -->
+  <!--   <buildtool_depend>catkin</buildtool_depend> -->
+  <!--   <run_depend>message_runtime</run_depend> -->
+  <!--   <test_depend>gtest</test_depend> -->
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>rosserial_arduino</build_depend>
+  <build_depend>rosserial_client</build_depend>
+  <build_depend>rosserial_python</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>nav_msgs</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>rosserial_arduino</run_depend>
+  <run_depend>rosserial_client</run_depend>
+  <run_depend>rosserial_python</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>std_msgs</run_depend>
+
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+
+  </export>
+</package>
