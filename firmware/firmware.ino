@@ -54,8 +54,8 @@ class WiFiHardware {
   }
 };
 
-char ssid[] = "TTnet-007";     //  your network SSID (name)
-char pass[] = "BehcetMetehan!997200!";  // your network password
+char ssid[] = "YOUR_SSID";     //  your network SSID (name)
+char pass[] = "YOUR_SECRET_PASSPHRASE";  // your network password
 
 
 /*
