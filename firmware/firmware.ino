@@ -14,7 +14,6 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
-#include <Servo.h>
 #include <Scheduler.h>
 #include <Arduino.h>
 #include <SPI.h>
@@ -243,7 +242,11 @@ void setup(){
   attachInterrupt(digitalPinToInterrupt(rightEncoder.greenCablePin), rightHandlerA , CHANGE);
   attachInterrupt(digitalPinToInterrupt(rightEncoder.yellowCablePin), rightHandlerB , CHANGE);
 
-  //PWM motor controller setup
+  //motor controller setup
+  pinMode(leftForwardPin,OUTPUT);
+  pinMode(leftBackwardPin,OUTPUT);
+  pinMode(rightForwardPin,OUTPUT);
+  pinMode(rightBackwardPin,OUTPUT);
   pinMode(rightMotorPwm, OUTPUT);
   pinMode(leftMotorPwm, OUTPUT);
 
