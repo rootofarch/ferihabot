@@ -60,12 +60,12 @@ const char pass[] = "passwd";   // your network password
    ------------general variables--
 */
 //motor controller pin setup
-const int leftForwardPin = 0;
-const int leftBackwardPin = 1;
-const int rightForwardPin = 2;
-const int rightBackwardPin = 3;
-const int leftMotorPwm = 19;
-const int rightMotorPwm = 18;
+const int leftForwardPin = 2;
+const int leftBackwardPin = 3;
+const int rightForwardPin = 1;
+const int rightBackwardPin = 0;
+const int leftMotorPwm = 18;
+const int rightMotorPwm = 19;
 
 //encoder pin setup
 const int encoderLA = 4;
@@ -74,10 +74,10 @@ const int encoderRA = 7;
 const int encoderRB = 6;
 
 //ulrasonic modules pin setup
-const int leftUTrigPin = ;    // pin should be added
-const int leftUEchoPin = ;    // pin should be added
-const int rightUTrigPin = ;   // pin should be added
-const int rightUEchoPin = ;   // pin should be added
+const int leftUTrigPin = 13;
+const int leftUEchoPin = 14;
+const int rightUTrigPin = 21;
+const int rightUEchoPin = 20;
 
 //bno055 setup
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
