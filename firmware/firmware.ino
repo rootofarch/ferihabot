@@ -167,14 +167,18 @@ float absoluteValue(float value){
     return value;
 }
 
+float map_func(float value, float inMin, float inMax, float outMin, float outMax) {
+  return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+}
+
 //reads cmd_vel topic then turns the motors
 void cmd_vel_handle( const geometry_msgs::Twist& msg){
   fwd_message = msg.linear.x;
   turn_message = msg.angular.z;
   right_vel = int(((2.0 * fwd_message)+(turn_message * wide_length)) / (2.0 * radius_of_whells));
   left_vel = int(((2.0 * fwd_message)-(turn_message * wide_length)) / (2.0 * radius_of_whells));
-  mapped_right = int(map(absoluteValue(right_vel) , 0 , 5 , 0 , 255));
-  mapped_left = int(map(absoluteValue(left_vel) , 0 , 5 , 0 , 255));
+  mapped_right = int(map_func(absoluteValue(right_vel) , 0 , 6 , 0 , 255));
+  mapped_left = int(map_func(absoluteValue(left_vel) , 0 , 6 , 0 , 255));
 
   
   if (right_vel >= 0){
@@ -292,7 +296,7 @@ void loop(){
   //correct the orientation
   pose2d.x = xVector / 10.0;
   pose2d.y = yVector / 10.0;
-  pose2d.theta = degToRad(map(event.orientation.x , 0 , 360 , 360 , 0));
+  pose2d.theta = degToRad(map_func(event.orientation.x , 0 , 360 , 360 , 0));
   ros_odom.publish( &pose2d );
 
   //publish the adc value every 50 milliseconds since it takes that long for the ultrasonic sensor to stabilize
