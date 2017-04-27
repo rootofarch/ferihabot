@@ -55,7 +55,6 @@ class WiFiHardware{
 const char ssid[] = "SSID";     // your network SSID (name)
 const char pass[] = "passwd";   // your network password
 
-
 /*
    ------------general variables--
 */
