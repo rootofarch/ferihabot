@@ -29,19 +29,19 @@ class WiFiHardware{
   WiFiHardware(){};
 
   void init(){
-    // do your initialization here. this probably includes TCP server/client setup
+    // TCP server/client setup
     client.connect(server, 11411);
   }
 
-  // read a byte from the serial port. -1 = failure
+  // read a byte from the serial port. (-1 = failure)
   int read(){
-    // implement this method so that it reads a byte from the TCP connection and returns it
+    // implemention of this method so that it reads a byte from the TCP connection and returns it
     return client.read();         
   }
 
   // write data to the connection to ROS
   void write(uint8_t* data, int length){
-    // implement this so that it takes the arguments and writes or prints them to the TCP connection
+    // implemention of this so that it takes the arguments and writes them to the TCP connection
     for(int i=0; i<length; i++)
       client.write(data[i]);
   }
@@ -274,6 +274,10 @@ void setup(){
   bno.setExtCrystalUse(true);
   delay(100);
 
+  // Add "loop2" to scheduling.
+  // "loop" is always started by default.
+  Scheduler.startLoop(loop2);
+
   start = millis();
 }
 
@@ -298,6 +302,11 @@ void loop(){
   pose2d.theta = degToRad(map_func(event.orientation.x , 0 , 360 , 360 , 0));
   ros_odom.publish( &pose2d );
 
+  nh.spinOnce();
+  delay(2);
+}
+
+void loop2(){
   //publish the adc value every 50 milliseconds since it takes that long for the ultrasonic sensor to stabilize
   if ( millis() >= range_time ){
     range_msg.range = getRangeUltrasound(rightUTrigPin,rightUEchoPin);
@@ -314,7 +323,6 @@ void loop(){
   nh.spinOnce();
   delay(2);
 }
-
 
 /* user defined functions bodies*/
 void rightHandlerA() {
