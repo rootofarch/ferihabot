@@ -57,6 +57,11 @@ bool Adafruit_BNO055::begin(adafruit_bno055_opmode_t mode)
   /* Enable I2C */
   Wire.begin();
 
+  // BNO055 clock stretches for 500us or more!
+#ifdef ESP8266
+  Wire.setClockStretchLimit(1000); // Allow for 1000us of clock stretching
+#endif
+
   /* Make sure we have the right device */
   uint8_t id = read8(BNO055_CHIP_ID_ADDR);
   if(id != BNO055_ID)
@@ -95,6 +100,14 @@ bool Adafruit_BNO055::begin(adafruit_bno055_opmode_t mode)
   write8(BNO055_UNIT_SEL_ADDR, unitsel);
   */
 
+  /* Configure axis mapping (see section 3.4) */
+  /*
+  write8(BNO055_AXIS_MAP_CONFIG_ADDR, REMAP_CONFIG_P2); // P0-P7, Default is P1
+  delay(10);
+  write8(BNO055_AXIS_MAP_SIGN_ADDR, REMAP_SIGN_P2); // P0-P7, Default is P1
+  delay(10);
+  */
+  
   write8(BNO055_SYS_TRIGGER_ADDR, 0x0);
   delay(10);
   /* Set the requested operating mode (see section 3.3) */
@@ -148,14 +161,7 @@ void Adafruit_BNO055::setExtCrystalUse(boolean usextal)
 /**************************************************************************/
 void Adafruit_BNO055::getSystemStatus(uint8_t *system_status, uint8_t *self_test_result, uint8_t *system_error)
 {
-  adafruit_bno055_opmode_t backupmode = _mode;
-
-  setMode(OPERATION_MODE_CONFIG);
-  delay(20);
   write8(BNO055_PAGE_ID_ADDR, 0);
-
-  write8(BNO055_SYS_TRIGGER_ADDR, read8(BNO055_SYS_TRIGGER_ADDR) | 0x1);
-  delay(1000);
 
   /* System Status (see section 4.3.58)
      ---------------------------------
@@ -201,8 +207,7 @@ void Adafruit_BNO055::getSystemStatus(uint8_t *system_status, uint8_t *self_test
   if (system_error != 0)
     *system_error     = read8(BNO055_SYS_ERR_ADDR);
 
-  setMode(backupmode);
-  delay(20);
+  delay(200);
 }
 
 /**************************************************************************/
@@ -396,6 +401,154 @@ bool Adafruit_BNO055::getEvent(sensors_event_t *event)
 
   return true;
 }
+
+/**************************************************************************/
+/*!
+@brief  Reads the sensor's offset registers into a byte array
+*/
+/**************************************************************************/
+bool Adafruit_BNO055::getSensorOffsets(uint8_t* calibData)
+{
+    if (isFullyCalibrated())
+    {
+        adafruit_bno055_opmode_t lastMode = _mode;
+        setMode(OPERATION_MODE_CONFIG);
+
+        readLen(ACCEL_OFFSET_X_LSB_ADDR, calibData, NUM_BNO055_OFFSET_REGISTERS);
+
+        setMode(lastMode);
+        return true;
+    }
+    return false;
+}
+
+/**************************************************************************/
+/*!
+@brief  Reads the sensor's offset registers into an offset struct
+*/
+/**************************************************************************/
+bool Adafruit_BNO055::getSensorOffsets(adafruit_bno055_offsets_t &offsets_type)
+{
+    if (isFullyCalibrated())
+    {
+        adafruit_bno055_opmode_t lastMode = _mode;
+        setMode(OPERATION_MODE_CONFIG);
+        delay(25);
+
+        offsets_type.accel_offset_x = (read8(ACCEL_OFFSET_X_MSB_ADDR) << 8) | (read8(ACCEL_OFFSET_X_LSB_ADDR));
+        offsets_type.accel_offset_y = (read8(ACCEL_OFFSET_Y_MSB_ADDR) << 8) | (read8(ACCEL_OFFSET_Y_LSB_ADDR));
+        offsets_type.accel_offset_z = (read8(ACCEL_OFFSET_Z_MSB_ADDR) << 8) | (read8(ACCEL_OFFSET_Z_LSB_ADDR));
+
+        offsets_type.gyro_offset_x = (read8(GYRO_OFFSET_X_MSB_ADDR) << 8) | (read8(GYRO_OFFSET_X_LSB_ADDR));
+        offsets_type.gyro_offset_y = (read8(GYRO_OFFSET_Y_MSB_ADDR) << 8) | (read8(GYRO_OFFSET_Y_LSB_ADDR));
+        offsets_type.gyro_offset_z = (read8(GYRO_OFFSET_Z_MSB_ADDR) << 8) | (read8(GYRO_OFFSET_Z_LSB_ADDR));
+
+        offsets_type.mag_offset_x = (read8(MAG_OFFSET_X_MSB_ADDR) << 8) | (read8(MAG_OFFSET_X_LSB_ADDR));
+        offsets_type.mag_offset_y = (read8(MAG_OFFSET_Y_MSB_ADDR) << 8) | (read8(MAG_OFFSET_Y_LSB_ADDR));
+        offsets_type.mag_offset_z = (read8(MAG_OFFSET_Z_MSB_ADDR) << 8) | (read8(MAG_OFFSET_Z_LSB_ADDR));
+
+        offsets_type.accel_radius = (read8(ACCEL_RADIUS_MSB_ADDR) << 8) | (read8(ACCEL_RADIUS_LSB_ADDR));
+        offsets_type.mag_radius = (read8(MAG_RADIUS_MSB_ADDR) << 8) | (read8(MAG_RADIUS_LSB_ADDR));
+
+        setMode(lastMode);
+        return true;
+    }
+    return false;
+}
+
+
+/**************************************************************************/
+/*!
+@brief  Writes an array of calibration values to the sensor's offset registers
+*/
+/**************************************************************************/
+void Adafruit_BNO055::setSensorOffsets(const uint8_t* calibData)
+{
+    adafruit_bno055_opmode_t lastMode = _mode;
+    setMode(OPERATION_MODE_CONFIG);
+    delay(25);
+
+    /* A writeLen() would make this much cleaner */
+    write8(ACCEL_OFFSET_X_LSB_ADDR, calibData[0]);
+    write8(ACCEL_OFFSET_X_MSB_ADDR, calibData[1]);
+    write8(ACCEL_OFFSET_Y_LSB_ADDR, calibData[2]);
+    write8(ACCEL_OFFSET_Y_MSB_ADDR, calibData[3]);
+    write8(ACCEL_OFFSET_Z_LSB_ADDR, calibData[4]);
+    write8(ACCEL_OFFSET_Z_MSB_ADDR, calibData[5]);
+
+    write8(GYRO_OFFSET_X_LSB_ADDR, calibData[6]);
+    write8(GYRO_OFFSET_X_MSB_ADDR, calibData[7]);
+    write8(GYRO_OFFSET_Y_LSB_ADDR, calibData[8]);
+    write8(GYRO_OFFSET_Y_MSB_ADDR, calibData[9]);
+    write8(GYRO_OFFSET_Z_LSB_ADDR, calibData[10]);
+    write8(GYRO_OFFSET_Z_MSB_ADDR, calibData[11]);
+
+    write8(MAG_OFFSET_X_LSB_ADDR, calibData[12]);
+    write8(MAG_OFFSET_X_MSB_ADDR, calibData[13]);
+    write8(MAG_OFFSET_Y_LSB_ADDR, calibData[14]);
+    write8(MAG_OFFSET_Y_MSB_ADDR, calibData[15]);
+    write8(MAG_OFFSET_Z_LSB_ADDR, calibData[16]);
+    write8(MAG_OFFSET_Z_MSB_ADDR, calibData[17]);
+
+    write8(ACCEL_RADIUS_LSB_ADDR, calibData[18]);
+    write8(ACCEL_RADIUS_MSB_ADDR, calibData[19]);
+
+    write8(MAG_RADIUS_LSB_ADDR, calibData[20]);
+    write8(MAG_RADIUS_MSB_ADDR, calibData[21]);
+
+    setMode(lastMode);
+}
+
+/**************************************************************************/
+/*!
+@brief  Writes to the sensor's offset registers from an offset struct
+*/
+/**************************************************************************/
+void Adafruit_BNO055::setSensorOffsets(const adafruit_bno055_offsets_t &offsets_type)
+{
+    adafruit_bno055_opmode_t lastMode = _mode;
+    setMode(OPERATION_MODE_CONFIG);
+    delay(25);
+
+    write8(ACCEL_OFFSET_X_LSB_ADDR, (offsets_type.accel_offset_x) & 0x0FF);
+    write8(ACCEL_OFFSET_X_MSB_ADDR, (offsets_type.accel_offset_x >> 8) & 0x0FF);
+    write8(ACCEL_OFFSET_Y_LSB_ADDR, (offsets_type.accel_offset_y) & 0x0FF);
+    write8(ACCEL_OFFSET_Y_MSB_ADDR, (offsets_type.accel_offset_y >> 8) & 0x0FF);
+    write8(ACCEL_OFFSET_Z_LSB_ADDR, (offsets_type.accel_offset_z) & 0x0FF);
+    write8(ACCEL_OFFSET_Z_MSB_ADDR, (offsets_type.accel_offset_z >> 8) & 0x0FF);
+
+    write8(GYRO_OFFSET_X_LSB_ADDR, (offsets_type.gyro_offset_x) & 0x0FF);
+    write8(GYRO_OFFSET_X_MSB_ADDR, (offsets_type.gyro_offset_x >> 8) & 0x0FF);
+    write8(GYRO_OFFSET_Y_LSB_ADDR, (offsets_type.gyro_offset_y) & 0x0FF);
+    write8(GYRO_OFFSET_Y_MSB_ADDR, (offsets_type.gyro_offset_y >> 8) & 0x0FF);
+    write8(GYRO_OFFSET_Z_LSB_ADDR, (offsets_type.gyro_offset_z) & 0x0FF);
+    write8(GYRO_OFFSET_Z_MSB_ADDR, (offsets_type.gyro_offset_z >> 8) & 0x0FF);
+
+    write8(MAG_OFFSET_X_LSB_ADDR, (offsets_type.mag_offset_x) & 0x0FF);
+    write8(MAG_OFFSET_X_MSB_ADDR, (offsets_type.mag_offset_x >> 8) & 0x0FF);
+    write8(MAG_OFFSET_Y_LSB_ADDR, (offsets_type.mag_offset_y) & 0x0FF);
+    write8(MAG_OFFSET_Y_MSB_ADDR, (offsets_type.mag_offset_y >> 8) & 0x0FF);
+    write8(MAG_OFFSET_Z_LSB_ADDR, (offsets_type.mag_offset_z) & 0x0FF);
+    write8(MAG_OFFSET_Z_MSB_ADDR, (offsets_type.mag_offset_z >> 8) & 0x0FF);
+
+    write8(ACCEL_RADIUS_LSB_ADDR, (offsets_type.accel_radius) & 0x0FF);
+    write8(ACCEL_RADIUS_MSB_ADDR, (offsets_type.accel_radius >> 8) & 0x0FF);
+
+    write8(MAG_RADIUS_LSB_ADDR, (offsets_type.mag_radius) & 0x0FF);
+    write8(MAG_RADIUS_MSB_ADDR, (offsets_type.mag_radius >> 8) & 0x0FF);
+
+    setMode(lastMode);
+}
+
+bool Adafruit_BNO055::isFullyCalibrated(void)
+{
+    uint8_t system, gyro, accel, mag;
+    getCalibration(&system, &gyro, &accel, &mag);
+    if (system < 3 || gyro < 3 || accel < 3 || mag < 3)
+        return false;
+    return true;
+}
+
 
 /***************************************************************************
  PRIVATE FUNCTIONS

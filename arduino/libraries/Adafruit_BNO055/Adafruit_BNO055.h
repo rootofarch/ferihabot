@@ -40,6 +40,24 @@
 #define BNO055_ADDRESS_B (0x29)
 #define BNO055_ID        (0xA0)
 
+#define NUM_BNO055_OFFSET_REGISTERS (22)
+
+typedef struct
+{
+    uint16_t accel_offset_x;
+    uint16_t accel_offset_y;
+    uint16_t accel_offset_z;
+    uint16_t gyro_offset_x;
+    uint16_t gyro_offset_y;
+    uint16_t gyro_offset_z;
+    uint16_t mag_offset_x;
+    uint16_t mag_offset_y;
+    uint16_t mag_offset_z;
+
+    uint16_t accel_radius;
+    uint16_t mag_radius;
+} adafruit_bno055_offsets_t;
+
 class Adafruit_BNO055 : public Adafruit_Sensor
 {
   public:
@@ -218,6 +236,30 @@ class Adafruit_BNO055 : public Adafruit_Sensor
       OPERATION_MODE_NDOF                                     = 0X0C
     } adafruit_bno055_opmode_t;
 
+    typedef enum
+    {
+      REMAP_CONFIG_P0                                         = 0x21,
+      REMAP_CONFIG_P1                                         = 0x24, // default
+      REMAP_CONFIG_P2                                         = 0x24,
+      REMAP_CONFIG_P3                                         = 0x21,
+      REMAP_CONFIG_P4                                         = 0x24,
+      REMAP_CONFIG_P5                                         = 0x21,
+      REMAP_CONFIG_P6                                         = 0x21,
+      REMAP_CONFIG_P7                                         = 0x24
+    } adafruit_bno055_axis_remap_config_t;
+
+    typedef enum
+    {
+      REMAP_SIGN_P0                                           = 0x04,
+      REMAP_SIGN_P1                                           = 0x00, // default
+      REMAP_SIGN_P2                                           = 0x06,
+      REMAP_SIGN_P3                                           = 0x02,
+      REMAP_SIGN_P4                                           = 0x03,
+      REMAP_SIGN_P5                                           = 0x01,
+      REMAP_SIGN_P6                                           = 0x07,
+      REMAP_SIGN_P7                                           = 0x05
+    } adafruit_bno055_axis_remap_sign_t;
+
     typedef struct
     {
       uint8_t  accel_rev;
@@ -237,8 +279,12 @@ class Adafruit_BNO055 : public Adafruit_Sensor
       VECTOR_GRAVITY       = BNO055_GRAVITY_DATA_X_LSB_ADDR
     } adafruit_vector_type_t;
 
+#ifdef ARDUINO_SAMD_ZERO
+#error "On an arduino Zero, BNO055's ADR pin must be high. Fix that, then delete this line."
+    Adafruit_BNO055 ( int32_t sensorID = -1, uint8_t address = BNO055_ADDRESS_B );
+#else
     Adafruit_BNO055 ( int32_t sensorID = -1, uint8_t address = BNO055_ADDRESS_A );
-
+#endif
     bool  begin               ( adafruit_bno055_opmode_t mode = OPERATION_MODE_NDOF );
     void  setMode             ( adafruit_bno055_opmode_t mode );
     void  getRevInfo          ( adafruit_bno055_rev_info_t* );
@@ -257,6 +303,13 @@ class Adafruit_BNO055 : public Adafruit_Sensor
     /* Adafruit_Sensor implementation */
     bool  getEvent  ( sensors_event_t* );
     void  getSensor ( sensor_t* );
+
+    /* Functions to deal with raw calibration data */
+    bool  getSensorOffsets(uint8_t* calibData);
+    bool  getSensorOffsets(adafruit_bno055_offsets_t &offsets_type);
+    void  setSensorOffsets(const uint8_t* calibData);
+    void  setSensorOffsets(const adafruit_bno055_offsets_t &offsets_type);
+    bool  isFullyCalibrated(void);
 
   private:
     byte  read8   ( adafruit_bno055_reg_t );
