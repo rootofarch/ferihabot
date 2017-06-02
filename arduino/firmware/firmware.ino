@@ -89,7 +89,7 @@ Odometer odom;
 // robots physical values
 const double radius_of_wheels = 3;        //r(cm)
 const double wide_length = 11.2;          //l(cm)
-const float motor_one_turn_tick = 700.0;  
+const float motor_one_turn_tick = 1400.0;  
 const float perimeter_of_wheels = 0.195;  //(m)
 
 /*
@@ -114,8 +114,8 @@ float fwd_message;
 float turn_message;
 float right_cmd_vel;
 float left_cmd_vel;
-int mapped_right_vel;
-int mapped_left_vel;
+float mapped_right_vel=0;
+float mapped_left_vel=0;
 //ultrasonic sensor handler
 long ultrasonic_range_time;
 char ultrasonic_frameid[] = "/feriha/ultrasonic";
@@ -146,8 +146,8 @@ ros::Publisher ros_odom("/feriha/pose2d", &pose2d);
 
 //ultrasonic sensors
 sensor_msgs::Range range_msg;
-ros::Publisher pub_range1("/feriha/ultrasonicRight", &range_msg);
-ros::Publisher pub_range2("/feriha/ultrasonicLeft", &range_msg);
+ros::Publisher pub_range1("/feriha/ultrasonic/right", &range_msg);
+ros::Publisher pub_range2("/feriha/ultrasonic/left", &range_msg);
 
 //cmd velocity
 ros::Subscriber<geometry_msgs::Twist> sub("/feriha/cmd_vel", &cmd_vel_handle );
@@ -251,11 +251,11 @@ void loop2(){
     range_msg.range = getRangeUltrasound(rightUTrigPin,rightUEchoPin);
     range_msg.header.stamp = nh.now();
     pub_range1.publish(&range_msg);
-
+    
     range_msg.range = getRangeUltrasound(leftUTrigPin,leftUEchoPin);
     range_msg.header.stamp = nh.now();
     pub_range2.publish(&range_msg);
-
+    
     ultrasonic_range_time =  millis() + 50;
   }
   
@@ -300,46 +300,32 @@ float map_func(float value, float inMin, float inMax, float outMin, float outMax
 void cmd_vel_handle( const geometry_msgs::Twist& msg){
   fwd_message = msg.linear.x;
   turn_message = msg.angular.z;
-  right_cmd_vel = int(((2.0 * fwd_message)+(turn_message * wide_length)) / (2.0 * radius_of_wheels));
-  left_cmd_vel = int(((2.0 * fwd_message)-(turn_message * wide_length)) / (2.0 * radius_of_wheels));
-  if ((right_cmd_vel < 0.5) && (right_cmd_vel > -0.5)){
-    right_cmd_vel *= 2;
-  }
-  if ((left_cmd_vel < 0.5)  && (left_cmd_vel > -0.5)){
-    left_cmd_vel *= 2;  
-  }
-  mapped_right_vel = int(map_func(absoluteValue(right_cmd_vel) , 0 , 6 , 0 , 255));
-  mapped_left_vel = int(map_func(absoluteValue(left_cmd_vel) , 0 , 6 , 0 , 255));
+  right_cmd_vel = ((2.0 * fwd_message)+(turn_message * wide_length)) / (2.0 * radius_of_wheels);
+  left_cmd_vel =  ((2.0 * fwd_message)-(turn_message * wide_length)) / (2.0 * radius_of_wheels);
   
-  if (right_cmd_vel >= 0){
+  if (right_cmd_vel >= 0){      // direction setting
     digitalWrite(rightForwardPin,HIGH);
     digitalWrite(rightBackwardPin,LOW);
   }
-  else{
+  else{                         // direction setting
     digitalWrite(rightForwardPin,LOW);
     digitalWrite(rightBackwardPin,HIGH);
   }
-  if (left_cmd_vel >= 0){
+  if (left_cmd_vel >= 0){       // direction setting
     digitalWrite(leftForwardPin,HIGH);
     digitalWrite(leftBackwardPin,LOW);
   }
-  else{
+  else{                         // direction setting
     digitalWrite(leftForwardPin,LOW);
     digitalWrite(leftBackwardPin,HIGH);
   }
-
-  if(mapped_right_vel > 255){
-    analogWrite(rightMotorPwm,255);
-  }
-  else{
-    analogWrite(rightMotorPwm,mapped_right_vel);
-  }
-  if(mapped_left_vel > 255){
-    analogWrite(leftMotorPwm,255);
-  }
-  else{
-    analogWrite(leftMotorPwm,mapped_left_vel);
-  }
+  if (right_cmd_vel == 0){mapped_right_vel = 0;}  // it is more efficient because "Velocity Fixer" does this job more scientificly
+  else if (mapped_right_vel == 0){mapped_right_vel = 40;}                     // we only give a trigger force then velocity fixer edits this force
+  if (left_cmd_vel == 0){mapped_left_vel = 0;}    // it is more efficient because "Velocity Fixer" does this job more scientificly
+  else if(mapped_left_vel == 0){mapped_left_vel = 40;}                        // we only give a trigger force then velocity fixer edits this force
+  
+  analogWrite(rightMotorPwm,int(mapped_right_vel));
+  analogWrite(leftMotorPwm,int(mapped_left_vel));
 }
 
 // fixes if wheels dont turn as expected velocity
@@ -347,34 +333,36 @@ void fix_velocities(){
   right_enc_pos = rightEncoder.encoderTicks;
   left_enc_pos = leftEncoder.encoderTicks;
   enc_velfix_time_now = millis();
-  right_enc_vel = (absoluteValue(((right_enc_pos-right_enc_old_pos) / motor_one_turn_tick) * perimeter_of_wheels)/(enc_velfix_time_now-enc_velfix_time_old))*1000;// multiplied with 1000 for turning m/ms to m/s
-  left_enc_vel  = (absoluteValue(((left_enc_pos -left_enc_old_pos)  / motor_one_turn_tick) * perimeter_of_wheels)/(enc_velfix_time_now-enc_velfix_time_old))*1000;// multiplied with 1000 for turning m/ms to m/s
+  if (right_cmd_vel < 0){right_cmd_vel = absoluteValue(right_cmd_vel);} // we do this because we already used the sign for setting direction in cmd_vel_handle
+  if (left_cmd_vel  < 0){left_cmd_vel = absoluteValue(left_cmd_vel);}   // we do this because we already used the sign for setting direction in cmd_vel_handle
+  right_enc_vel = (absoluteValue(right_enc_pos-right_enc_old_pos) / motor_one_turn_tick * perimeter_of_wheels/(enc_velfix_time_now-enc_velfix_time_old))*1000;// multiplied with 1000 for transforming m/ms to m/s
+  left_enc_vel  = (absoluteValue(left_enc_pos -left_enc_old_pos)  / motor_one_turn_tick * perimeter_of_wheels/(enc_velfix_time_now-enc_velfix_time_old))*1000;// multiplied with 1000 for transforming m/ms to m/s
   right_enc_old_pos = right_enc_pos;
   left_enc_old_pos = left_enc_pos;
   enc_velfix_time_old = enc_velfix_time_now;
   if (mapped_right_vel != 255){ //if it is 255 we can not increase anymore
-    if (right_cmd_vel - right_enc_vel > 0.1){
-      mapped_right_vel += (right_cmd_vel - right_enc_vel)*10;
+    if (right_cmd_vel - right_enc_vel >= 0.09){
+      mapped_right_vel += (right_cmd_vel - right_enc_vel)*30;
       if (mapped_right_vel > 255){mapped_right_vel = 255;}
-      analogWrite(rightMotorPwm,mapped_right_vel);
+      analogWrite(rightMotorPwm,int(mapped_right_vel));
     }
   }
-  if (right_enc_vel - right_cmd_vel > 0.1){
-    mapped_right_vel -= (right_enc_vel - right_cmd_vel)*10;
+  if (right_enc_vel - right_cmd_vel >= 0.09){
+    mapped_right_vel -= (right_enc_vel - right_cmd_vel)*30;
       if (mapped_right_vel < 0){mapped_right_vel = 0;}
-      analogWrite(rightMotorPwm,mapped_right_vel);
+      analogWrite(rightMotorPwm,int(mapped_right_vel));
   }
   if (mapped_left_vel != 255){  //if it is 255 we can not increase anymore
-    if (left_cmd_vel - left_enc_vel > 0.1){
-      mapped_left_vel += (left_cmd_vel - left_enc_vel)*10;
+    if (left_cmd_vel - left_enc_vel >= 0.09){
+      mapped_left_vel += (left_cmd_vel - left_enc_vel)*30;
       if (mapped_left_vel > 255){mapped_left_vel = 255;}
-      analogWrite(leftMotorPwm,mapped_left_vel);
+      analogWrite(leftMotorPwm,int(mapped_left_vel));
     }
   }
-  if (left_enc_vel - left_cmd_vel > 0.1){
-    mapped_left_vel -= (left_enc_vel - left_cmd_vel)*10;
+  if (left_enc_vel - left_cmd_vel >= 0.09){
+    mapped_left_vel -= (left_enc_vel - left_cmd_vel)*30;
       if (mapped_left_vel < 0){mapped_left_vel = 0;}
-      analogWrite(leftMotorPwm,mapped_left_vel);
+      analogWrite(leftMotorPwm,int(mapped_left_vel));
   }
 }
 
