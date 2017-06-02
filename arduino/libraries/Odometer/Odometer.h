@@ -4,7 +4,7 @@
 class Odometer {
 public:
   Odometer();
-  long oneTurnTick = 700;
+  long oneTurnTick = 1400;
   float oneTurnDistance = 19.5;
   long rightEncoderTick = 0;
   long leftEncoderTick = 0;
