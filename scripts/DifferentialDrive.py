@@ -13,6 +13,10 @@ class FerihaBotControl:
         self.rate = rospy.Rate(10)
         self.My_Pose2D
         
+class target:
+    x = 5
+    y = 5
+        
 def movement(self, ang_z, lin_x):   
     movement_msg = Twist()
     
@@ -77,9 +81,3 @@ def GoToPointCurve(self, target):
         target_direction = find_target_direction(target, my_x, my_y)
         mlt_prmtr = math.fabs(my_pose - target_direction)
         movement(1*mlt_prmtr, 1)
-        
-        
-        
-    
-    
-    
