@@ -8,6 +8,7 @@ if [[ `rosversion -d | grep -i kinetic` ]]; then
                     ros-kinetic-rosserial-arduino \
                     ros-kinetic-rosserial
         rosrun rosserial_arduino make_libraries.py ~/Arduino/libraries
+        cp arduino/libraries/* ~/Arduino/libraries/
     else
         echo "Please make sure you have Arduino IDE and 'Arduino' folder in home direcetory"
     fi
