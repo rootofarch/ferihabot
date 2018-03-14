@@ -118,7 +118,7 @@ int mapped_right_vel;
 int mapped_left_vel;
 //ultrasonic sensor handler
 long ultrasonic_range_time;
-char ultrasonic_frameid[] = "/feriha/ultrasonic";
+char ultrasonic_frameid[] = "/srb_1/ultrasonic";
 long ultrasonic_duration;
 //velocity fixer
 long right_enc_pos;
@@ -142,15 +142,15 @@ ros::NodeHandle_<WiFiHardware> nh;
 
 //pose2d
 geometry_msgs::Pose2D pose2d;
-ros::Publisher ros_odom("/feriha/pose2d", &pose2d);
+ros::Publisher ros_odom("/srb_1/pose2d", &pose2d);
 
 //ultrasonic sensors
 sensor_msgs::Range range_msg;
-ros::Publisher pub_range1("/feriha/ultrasonicRight", &range_msg);
-ros::Publisher pub_range2("/feriha/ultrasonicLeft", &range_msg);
+ros::Publisher pub_range1("/srb_1/ultrasonicRight", &range_msg);
+ros::Publisher pub_range2("/srb_1/ultrasonicLeft", &range_msg);
 
 //cmd velocity
-ros::Subscriber<geometry_msgs::Twist> sub("/feriha/cmd_vel", &cmd_vel_handle );
+ros::Subscriber<geometry_msgs::Twist> sub("/srb_1/cmd_vel", &cmd_vel_handle );
 
 /*
     ------------- ARDUINO ------------
