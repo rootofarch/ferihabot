@@ -7,7 +7,7 @@ from sensor_msgs.msg import Joy
 import math
 
 
-cmdvel = rospy.Publisher("/feriha/cmd_vel", Twist, queue_size=1)
+cmdvel = rospy.Publisher("/sarBravo/cmd_vel", Twist, queue_size=1)
 
 def callback(data):
     global cmdvel
